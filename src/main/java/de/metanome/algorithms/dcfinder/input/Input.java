@@ -114,6 +114,10 @@ public class Input {
         return rowCount;
     }
 
+    public int getColCount(){
+        return colCount;
+    }
+
     public int[][] getIntInput() {
         return intInput;
     }

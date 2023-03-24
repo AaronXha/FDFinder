@@ -14,7 +14,7 @@ public class CrossDiffMapBuilder {
     private final int differenceCount;
     private final int nAttributes;
 
-    public CrossDiffMapBuilder(PliShard shard1, PliShard shard2) {
+    public CrossDiffMapBuilder(PliShard shard1, PliShard shard2, int _nAttributes) {
         plis1 = shard1.plis;
         plis2 = shard2.plis;
         tidBeg1 = shard1.beg;
@@ -22,7 +22,7 @@ public class CrossDiffMapBuilder {
         tidRange1 = shard1.end - shard1.beg;
         tidRange2 = shard2.end - shard2.beg;
         differenceCount = (shard1.end - shard1.beg) * (shard2.end - shard2.beg);
-        nAttributes = shard1.plis.size();
+        nAttributes = _nAttributes;
     }
 
     public HashLongLongMap buildDiffMap(){

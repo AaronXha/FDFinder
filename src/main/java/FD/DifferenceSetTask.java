@@ -24,21 +24,23 @@ public class DifferenceSetTask extends CountedCompleter<HashLongLongMap> {
 
     DifferenceSetTask sibling;
     HashLongLongMap partialDiffMap;
+    int nAttributes;
 
-    public DifferenceSetTask(DifferenceSetTask parent, PliShard[] _pliShards, int _beg, int _end) {
+    public DifferenceSetTask(DifferenceSetTask parent, PliShard[] _pliShards, int _beg, int _end, int _nAttributes) {
         super(parent);
         pliShards = _pliShards;
         taskBeg = _beg;
         taskEnd = _end;
         buildSearchIndex(taskEnd);
+        nAttributes = _nAttributes;
     }
 
     @Override
     public void compute() {
         if (taskEnd - taskBeg >= 2) {
             int mid = (taskBeg + taskEnd) >>> 1;
-            DifferenceSetTask left = new DifferenceSetTask(this, pliShards, taskBeg, mid);
-            DifferenceSetTask right = new DifferenceSetTask(this, pliShards, mid, taskEnd);
+            DifferenceSetTask left = new DifferenceSetTask(this, pliShards, taskBeg, mid, nAttributes);
+            DifferenceSetTask right = new DifferenceSetTask(this, pliShards, mid, taskEnd, nAttributes);
             left.sibling = right;
             right.sibling = left;
 
@@ -55,11 +57,11 @@ public class DifferenceSetTask extends CountedCompleter<HashLongLongMap> {
                 int j = i - (searchIndexes[i] - taskBeg);
 
                 if(i == j){
-                    SingleDiffMapBuilder singleDiffMapBuilder = new SingleDiffMapBuilder(pliShards[i]);
+                    SingleDiffMapBuilder singleDiffMapBuilder = new SingleDiffMapBuilder(pliShards[i], nAttributes);
                     partialDiffMap = singleDiffMapBuilder.buildDiffMap();
                 }
                 else{
-                    CrossDiffMapBuilder crossDiffMapBuilder = new CrossDiffMapBuilder(pliShards[i], pliShards[j]);
+                    CrossDiffMapBuilder crossDiffMapBuilder = new CrossDiffMapBuilder(pliShards[i], pliShards[j], nAttributes);
                     partialDiffMap = crossDiffMapBuilder.buildDiffMap();
                 }
 

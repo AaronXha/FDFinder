@@ -14,12 +14,12 @@ public class SingleDiffMapBuilder {
     private final int differenceCount;
     private final int nAttributes;
 
-    public SingleDiffMapBuilder(PliShard shard) {
+    public SingleDiffMapBuilder(PliShard shard, int _nAttributes) {
         plis = shard.plis;
         tidBeg = shard.beg;
         tidRange = shard.end - shard.beg;
         differenceCount = (tidRange + 1) * tidRange;
-        nAttributes = shard.plis.size();
+        nAttributes = _nAttributes;
     }
 
     public HashLongLongMap buildDiffMap(){
