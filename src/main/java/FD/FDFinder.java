@@ -1,9 +1,7 @@
 package FD;
 
-import FastADC.aei.ApproxEvidenceInverter;
 import FastADC.plishard.PliShard;
 import FastADC.plishard.PliShardBuilder;
-import de.metanome.algorithms.dcfinder.denialconstraints.DenialConstraintSet;
 import de.metanome.algorithms.dcfinder.input.Input;
 import de.metanome.algorithms.dcfinder.input.RelationalInput;
 

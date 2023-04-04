@@ -35,7 +35,7 @@ public class CrossDiffMapBuilder {
         for(int e = 0; e < nAttributes; e++){
             Pli pivotPli = plis1.get(e);
             Pli probePli = plis2.get(e);
-            long mask = 1l << e;
+            long mask = 1L << e;
             /** for every cluster in pli*/
             int[] pivotKeys = pivotPli.getKeys();
             for (int i = 0; i < pivotKeys.length; i++) {
@@ -57,7 +57,8 @@ public class CrossDiffMapBuilder {
 
         /** put differenceValue and count to diffMap*/
         for(long differenceValue :DifferenceValues){
-            diffMap.addValue(differenceValue, 1L, 0L);
+            if(differenceValue != 0)
+                diffMap.addValue(differenceValue, 1L, 0L);
         }
 
         return diffMap;

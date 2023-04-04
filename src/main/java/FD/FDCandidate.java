@@ -1,6 +1,5 @@
 package FD;
 
-import FastADC.aei.DCCandidate;
 import ch.javasoft.bitset.LongBitSet;
 
 public class FDCandidate {

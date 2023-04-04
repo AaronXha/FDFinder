@@ -42,7 +42,7 @@ public class LongBitSetTrie {
             treeNode = currSubtrees[i] == null ? (currSubtrees[i] = new LongBitSetTrie()) : currSubtrees[i];
         }
 
-        //if (dc != null) System.err.println("DC exists!");
+        //if (fd != null) System.err.println("FD exists!");
         treeNode.fd = addFD;
         return true;
     }
@@ -96,6 +96,10 @@ public class LongBitSetTrie {
 
     public boolean isEmpty() {
         return dc == null && noSubtree();
+    }
+
+    public boolean isCandFDEmpty(){
+        return fd == null && noSubtree();
     }
 
     private boolean noSubtree() {
