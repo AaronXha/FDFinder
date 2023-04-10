@@ -4,9 +4,9 @@ import java.util.List;
 
 public class DifferenceSet {
 
-    List<Difference> differences;
+    private List<Difference> differences;
 
-    long totalCount;
+    private long totalCount;
 
     int nAttributes;
 

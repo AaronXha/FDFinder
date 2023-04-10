@@ -20,6 +20,7 @@ public class FDFinder {
     private Input input;
     private PliShardBuilder pliShardBuilder;
     private int nAttributes;
+    private long nTuples;
     private DifferenceSetBuilder differenceSetBuilder;
 
     public FDFinder(double _threshold, int _len, boolean _linear){
@@ -38,6 +39,7 @@ public class FDFinder {
         input = new Input(new RelationalInput(dataFp), sizeLimit);
         pliShardBuilder = new PliShardBuilder(shardLength, input.getParsedColumns());
         nAttributes = input.getColCount();
+        nTuples = input.getRowCount();
         PliShard[] pliShards = pliShardBuilder.buildPliShards(input.getIntInput());
         long t_pre = System.currentTimeMillis() - t00;
         System.out.println(" [Attribute] Attribute number: " + nAttributes);
@@ -45,10 +47,11 @@ public class FDFinder {
 
         //build difference set
         long t10 = System.currentTimeMillis();
-        differenceSetBuilder = new DifferenceSetBuilder(nAttributes);
+
+        long differenceCount = nTuples * (nTuples - 1) / 2;
+        differenceSetBuilder = new DifferenceSetBuilder(nAttributes, differenceCount);
         DifferenceSet differenceSet = differenceSetBuilder.build(pliShards, linear);
         long t_diff = System.currentTimeMillis() - t10;
-        long diffCount = differenceSet.getTotalCount();
         System.out.println(" [Difference] # of differences: " + differenceSet.size());
         System.out.println(" [Difference] Accumulated difference count: " + differenceSet.getTotalCount());
         System.out.println("[FDFinder] Build differenceSet time: " + t_diff + "ms");

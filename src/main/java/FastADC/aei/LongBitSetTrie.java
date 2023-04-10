@@ -116,10 +116,6 @@ public class LongBitSetTrie {
         return getSubset(add, 0) != null;
     }
 
-    public DCCandidate getSubset(DCCandidate add) {
-        return getSubset(add, 0);
-    }
-
     private DCCandidate getSubset(DCCandidate add, int next) {
         if (dc != null) return dc;
 

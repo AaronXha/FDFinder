@@ -15,7 +15,6 @@ public class ApproxDifferenceInverter {
     private int nAttributes;
     private List<Difference> differences;
     private LongBitSetTrie approxCovers;    // for subset searching
-    //private LongBitSet[] mutexMap;   // i -> predicates concerning the same attribute pair with predicate i
     private AttributeOrganizer organizer; //re-order attributes by difference coverage to accelerate trie
 
     public ApproxDifferenceInverter(int _nAttributes) {
@@ -24,13 +23,10 @@ public class ApproxDifferenceInverter {
     }
 
     public FunctionDependency buildFD(DifferenceSet differenceSet, double error) {
-        if (error == 1) {
-            FunctionDependency res = new FunctionDependency();
-            return res;
-        }
 
         organizer = new AttributeOrganizer(nAttributes, differenceSet);
-        //mutexMap = organizer.transformMutexMap(mutexMap);
+
+        FunctionDependency fds = new FunctionDependency();
 
         /** for every attribute as RHS, get subset of differenceSet*/
         List<DifferenceSet> subsetDifferenceSet = getSubsetDifferenceSetList(differenceSet);
@@ -38,70 +34,81 @@ public class ApproxDifferenceInverter {
         /** for every attribute as RHS*/
         System.out.println("  [ADI] Inverting differences...");
         for (int i = 0; i < nAttributes; i++) {
-            long target = (long) Math.ceil((1 - error) * subsetDifferenceSet.get(i).getTotalCount());
+            long target = (long) Math.ceil(subsetDifferenceSet.get(i).getTotalCount() - error * differenceSet.getTotalCount());
+            if(target <= 0){
+                List<LongBitSet> res = new ArrayList<>();
+                for(int j = 0; j < nAttributes; j++){
+                    if(i != j){
+                        LongBitSet fd = new LongBitSet();
+                        fd.set(j);
+                        res.add(fd);
+                    }
+                }
+                fds.add(res);
+                System.out.println("  [ADI] FD size: " + res.size());
+                continue;
+            }
+
             differences = subsetDifferenceSet.get(i).getDifferences();
             differences.sort((o1, o2) -> Long.compare(o2.count, o1.count));
-            inverseDifferenceSet(target);
+
+            inverseDifferenceSet(target, i);
+
+            /** collect resulted FD */
+            List<LongBitSet> rawFDs = new ArrayList<>();
+            approxCovers.forEachFD(transFD -> rawFDs.add(transFD.bitSet));
+            System.out.println("  [ADI] FD size: " + rawFDs.size());
+            fds.add(rawFDs);
         }
 
-
-        /** collect resulted FD */
-        List<LongBitSet> rawFDs = new ArrayList<>();
-        approxCovers.forEachFD(transFD -> rawFDs.add(organizer.retransform(transFD.bitSet)));
-        System.out.println("  [ADI] Min cover size: " + rawFDs.size());
-
-        FunctionDependency fds = new FunctionDependency();
-/*        for (LongBitSet rawFD : rawFDs)
-            fds.add(new DenialConstraint(rawDC));
-        System.out.println("  [ADI] Total FD size: " + fds.size());
-
-        fds.minimize();
-        System.out.println("  [ADI] Min FD size : " + fds.size());*/
+        System.out.println("  [ADI] Total FD size: " + fds.getTotalCount());
+        //fds.minimize();
+        //System.out.println("  [ADI] Min FD size : " + fds.size());
 
         return fds;
     }
 
     List<DifferenceSet> getSubsetDifferenceSetList(DifferenceSet differenceSet){
         List<DifferenceSet> subsetDifferenceSetList = new ArrayList<>();
-        List<HashLongLongMap> subsetDiffMapList = new ArrayList<>(nAttributes);
 
-        /** generate differenceMap for every attribute*/
-        for (Difference subset : differenceSet.getDifferences()) {
-            long temp = subset.getDifferenceValue();
-            HashLongLongMap diffMap = HashLongLongMaps.newMutableMap();
-            int pos = 0;
-            while (temp > 0) {
-                if ((temp & 1) != 0) {
-                    diffMap.addValue(temp & ~(1L << pos), subset.getCount(), 0L);
-                    subsetDiffMapList.add(diffMap);
-                }
-                pos++;
-                temp >>>= 1;
-            }
-        }
         /** generate subset differenceSet for every attribute*/
         for(int i = 0; i < nAttributes; i++){
+            HashLongLongMap subsetDiffMap = HashLongLongMaps.newMutableMap();
+            long mask = 1L << i;
+
+            /** generate differenceMap for every attribute*/
+            for (Difference subset : differenceSet.getDifferences()) {
+                long temp = subset.getDifferenceValue();
+                if ((~temp & mask) != 0L) {  //if ((temp & mask) != 0L)
+                    long value = temp | mask;
+                    //long value = temp & ~mask;
+                    subsetDiffMap.addValue(value, subset.getCount(), 0L);
+                }
+            }
+
+            /** generate subset differenceSet for every attribute*/
             long diffCount = 0;
             List<Difference> subsetDifferences = new ArrayList<>();
-            for (var entry : subsetDiffMapList.get(i).entrySet()) {
+            for (var entry : subsetDiffMap.entrySet()) {
                 subsetDifferences.add(new Difference(entry.getKey(), entry.getValue(), nAttributes));
                 diffCount +=  entry.getValue();
             }
-
             subsetDifferenceSetList.add(new DifferenceSet(subsetDifferences, diffCount, nAttributes));
         }
 
         return subsetDifferenceSetList;
     }
 
-    void inverseDifferenceSet(long target) {
+    void inverseDifferenceSet(long target, int attribute) {
 
         approxCovers = new LongBitSetTrie();
         LongBitSet fullMask = new LongBitSet(nAttributes);
-        for (int i = 0; i < nAttributes; i++)
-            fullMask.set(i);
+        for (int i = 0; i < nAttributes; i++){
+            if(i != attribute)
+                fullMask.set(i);
+        }
 
-        Stack<SearchNode> nodes = new Stack<>();    // manual stack, where evidences[node.e] needs to be hit
+        Stack<SearchNode> nodes = new Stack<>();    // manual stack, where differences[node.e] needs to be hit
         LongBitSetTrie fdCandidates = new LongBitSetTrie();
         fdCandidates.add(new FDCandidate(new LongBitSet(), fullMask.clone()));
 
@@ -117,46 +124,9 @@ public class ApproxDifferenceInverter {
         }
     }
 
-    void hit(SearchNode nd) {
-        if (nd.e >= differences.size() || nd.addableAttributes.isSubSetOf(differences.get(nd.e).getBitSet()))
-            return;
-
-        nd.target -= differences.get(nd.e).count;
-
-        LongBitSet diff = differences.get(nd.e).getBitSet();
-        LongBitSetTrie fdCandidates = nd.fdCandidates;
-
-        if (nd.target <= 0) {
-            fdCandidates.forEach(fd -> approxCovers.add(fd));
-            for (FDCandidate invalidFD : nd.invalidFDs) {
-                LongBitSet canAdd = invalidFD.cand.getAndNot(diff);
-                for (int i = canAdd.nextSetBit(0); i >= 0; i = canAdd.nextSetBit(i + 1)) {
-                    FDCandidate validFD = new FDCandidate(invalidFD.bitSet.clone());
-                    validFD.bitSet.set(i);
-                    if (!approxCovers.containsSubset(validFD))
-                        approxCovers.add(validFD);
-                }
-            }
-        } else {
-            for (FDCandidate invalidFD : nd.invalidFDs) {
-                LongBitSet canAdd = invalidFD.cand.getAndNot(diff);
-                for (int i = canAdd.nextSetBit(0); i >= 0; i = canAdd.nextSetBit(i + 1)) {
-                    FDCandidate validFD = invalidFD.clone();
-                    validFD.bitSet.set(i);
-                    //validFD.cand.andNot(mutexMap[i]);
-                    if (!fdCandidates.containsSubset(validFD) && !approxCovers.containsSubset(validFD)) {
-                        if (!validFD.cand.isEmpty())
-                            fdCandidates.add(validFD);
-                        else if (isApproxCover(validFD.bitSet, nd.e + 1, nd.target))
-                            approxCovers.add(validFD);
-                    }
-                }
-            }
-        }
-    }
 
     void walk(int e, LongBitSet addableAttributes, LongBitSetTrie fdCandidates, long target, Stack<SearchNode> nodes, String status) {
-        while (e < differences.size() && !fdCandidates.isEmpty()) {
+        while (e < differences.size() && !fdCandidates.isCandFDEmpty()) {
             LongBitSet diff = differences.get(e).getBitSet();
             Collection<FDCandidate> unhitDiffFDs = fdCandidates.getAndRemoveGen(diff);
 
@@ -165,7 +135,8 @@ public class ApproxDifferenceInverter {
             nodes.push(nd);
 
             // unhit differences[e]
-            if (unhitDiffFDs.isEmpty()) return;
+            if (unhitDiffFDs.isEmpty())
+                return;
 
             addableAttributes.and(diff);
             if (addableAttributes.isEmpty()) return;
@@ -184,10 +155,51 @@ public class ApproxDifferenceInverter {
                 else if (!approxCovers.containsSubset(fd) && isApproxCover(fd.bitSet, e + 1, target))
                     approxCovers.add(fd);
             }
-            if (newCandidates.isEmpty()) return;
+            if (newCandidates.isCandFDEmpty()) return;
 
             e++;
             fdCandidates = newCandidates;
+        }
+    }
+
+
+    void hit(SearchNode nd) {
+        if (nd.e >= differences.size() || nd.addableAttributes.isSubSetOf(differences.get(nd.e).getBitSet()))
+            return;
+
+        nd.target -= differences.get(nd.e).count;
+
+        LongBitSet diff = differences.get(nd.e).getBitSet();
+        LongBitSetTrie fdCandidates = nd.fdCandidates;
+
+        if (nd.target <= 0) {
+            fdCandidates.forEachFD(fd -> approxCovers.add(fd));
+            for (FDCandidate invalidFD : nd.invalidFDs) {
+                LongBitSet canAdd = invalidFD.cand.getAndNot(diff);
+                for (int i = canAdd.nextSetBit(0); i >= 0; i = canAdd.nextSetBit(i + 1)) {
+                    FDCandidate validFD = new FDCandidate(invalidFD.bitSet.clone());
+                    validFD.bitSet.set(i);
+                    if (!approxCovers.containsSubset(validFD))
+                        approxCovers.add(validFD);
+                }
+            }
+        } else {
+            for (FDCandidate invalidFD : nd.invalidFDs) {
+                LongBitSet canAdd = invalidFD.cand.getAndNot(diff);
+                for (int i = canAdd.nextSetBit(0); i >= 0; i = canAdd.nextSetBit(i + 1)) {
+                    FDCandidate validFD = invalidFD.clone();
+                    validFD.bitSet.set(i);
+                    LongBitSet mutex = new LongBitSet(nAttributes);
+                    mutex.set(i);
+                    validFD.cand.andNot(mutex);
+                    if (!fdCandidates.containsSubset(validFD) && !approxCovers.containsSubset(validFD)) {
+                        if (!validFD.cand.isEmpty())
+                            fdCandidates.add(validFD);
+                        else if (isApproxCover(validFD.bitSet, nd.e + 1, nd.target))
+                            approxCovers.add(validFD);
+                    }
+                }
+            }
         }
     }
 

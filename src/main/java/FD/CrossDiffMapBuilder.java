@@ -26,9 +26,13 @@ public class CrossDiffMapBuilder {
     }
 
     public HashLongLongMap buildDiffMap(){
-        long[] DifferenceValues = new long[differenceCount];   // plis1 -> plis2
+        long[] differenceValues = new long[differenceCount];   // plis1 -> plis2
 
         HashLongLongMap diffMap = HashLongLongMaps.newMutableMap();
+        /*long initValue = (long)Math.pow(2, nAttributes) - 1;
+        for(int k = 0; k < differenceCount; k++){
+            differenceValues[k] = initValue;
+        }*/
 
         /** get all differenceValue*/
         /** for every attribute*/
@@ -46,7 +50,8 @@ public class CrossDiffMapBuilder {
                         int t1 = tid1 - tidBeg1, r1 = t1 * tidRange2;
                         for (int tid2 : probePli.get(j).getRawCluster()) {
                             int t2 = tid2 - tidBeg2, r2 = t2 * tidRange1;
-                            DifferenceValues[r1 + t2] |= mask;
+                            differenceValues[r1 + t2] |= mask;
+                            //differenceValues[r1 + t2] &= ~mask;
                         }
                     }
                 }
@@ -56,9 +61,8 @@ public class CrossDiffMapBuilder {
         /** accumulate differenceValues to differenceSet*/
 
         /** put differenceValue and count to diffMap*/
-        for(long differenceValue :DifferenceValues){
-            if(differenceValue != 0)
-                diffMap.addValue(differenceValue, 1L, 0L);
+        for(long differenceValue :differenceValues){
+            diffMap.addValue(differenceValue, 1L, 0L);
         }
 
         return diffMap;

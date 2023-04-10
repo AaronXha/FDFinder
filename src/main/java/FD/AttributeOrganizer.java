@@ -1,7 +1,5 @@
 package FD;
 
-import FastADC.evidence.evidenceSet.Evidence;
-import FastADC.evidence.evidenceSet.EvidenceSet;
 import ch.javasoft.bitset.LongBitSet;
 
 import java.util.ArrayList;
@@ -41,7 +39,7 @@ public class AttributeOrganizer {
                 .toArray();
     }
 
-    public List<Difference> transformEvidenceSet() {
+    public List<Difference> transformDifferenceSet() {
         List<Difference> differences = new ArrayList<>();
         int n = 0;
         for (Difference e : differenceSet.getDifferences()) {

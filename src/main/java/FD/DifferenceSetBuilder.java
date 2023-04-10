@@ -11,9 +11,11 @@ import java.util.List;
 public class DifferenceSetBuilder {
     private DifferenceSet fullDifferenceSet;
     private int nAttributes;
+    private long totalCount;
 
-    public DifferenceSetBuilder(int _nAttributes){
+    public DifferenceSetBuilder(int _nAttributes, long _totalCount){
         nAttributes = _nAttributes;
+        totalCount = _totalCount;
     }
 
     public DifferenceSet build(PliShard[] pliShards, boolean linear) {
@@ -28,7 +30,6 @@ public class DifferenceSetBuilder {
 
         HashLongLongMap diffMap = HashLongLongMaps.newMutableMap();
         List<Difference> differences = new ArrayList<>();
-        long diffCount = 0;
 
         LongLongConsumer add = (k, v) -> diffMap.addValue(k, v, 0L);
 
@@ -49,18 +50,16 @@ public class DifferenceSetBuilder {
 
         for (var entry : diffMap.entrySet()) {
             differences.add(new Difference(entry.getKey(), entry.getValue(), nAttributes));
-            diffCount += entry.getValue();
         }
 
 
-        return new DifferenceSet(differences, diffCount, nAttributes);
+        return new DifferenceSet(differences, totalCount, nAttributes);
     }
 
 
     private DifferenceSet buildDifferenceSet(PliShard[] pliShards) {
         HashLongLongMap diffMap;
         List<Difference> differences = new ArrayList<>();
-        long diffCount = 0;
 
         int taskCount = (pliShards.length * (pliShards.length + 1)) / 2;
 
@@ -69,8 +68,8 @@ public class DifferenceSetBuilder {
 
         for (var entry : diffMap.entrySet()) {
             differences.add(new Difference(entry.getKey(), entry.getValue(), nAttributes));
-            diffCount += entry.getValue();
         }
-        return new DifferenceSet(differences, diffCount, nAttributes);
+
+        return new DifferenceSet(differences, totalCount, nAttributes);
     }
 }

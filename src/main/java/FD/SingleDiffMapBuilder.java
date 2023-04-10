@@ -18,13 +18,17 @@ public class SingleDiffMapBuilder {
         plis = shard.plis;
         tidBeg = shard.beg;
         tidRange = shard.end - shard.beg;
-        differenceCount = (tidRange + 1) * tidRange / 2;
+        differenceCount = (tidRange - 1) * tidRange / 2;
         nAttributes = _nAttributes;
     }
 
     public HashLongLongMap buildDiffMap(){
         long[] differenceValues = new long[differenceCount];
         HashLongLongMap diffMap = HashLongLongMaps.newMutableMap();
+        /*long initValue = (long)Math.pow(2, nAttributes) - 1;
+        for(int k = 0; k < differenceCount; k++){
+            differenceValues[k] = initValue;
+        }*/
 
 
         /** get all differenceValue*/
@@ -39,11 +43,13 @@ public class SingleDiffMapBuilder {
                     /** for every tuple in cluster*/
                     for(int i = 0; i < rawCluster.size() - 1; i++){
                         int t1 = rawCluster.get(i) - tidBeg;
-                        for (int j = i + 1; j < rawCluster.size(); j++) {
+                        for (int j = i + 1 ; j < rawCluster.size(); j++) {
                             int t2 = rawCluster.get(j) - tidBeg;
+                            if(t1 == t2)   continue;
                             int tMin = Integer.min(t1, t2), tMax = Integer.max(t1, t2);
-                            int pos = (tMax + 1) * tMax / 2 + tMin;
+                            int pos = (tMax - 1) * tMax / 2 + tMin;
                             differenceValues[pos] |= mask;
+                            //differenceValues[pos] &= ~mask;
                         }
                     }
                 }
@@ -54,14 +60,8 @@ public class SingleDiffMapBuilder {
 
         /** first put differenceValue and count to diffMap*/
         for(long differenceValue :differenceValues){
-            if(differenceValue != 0)
-                diffMap.addValue(differenceValue, 1L, 0L);
+            diffMap.addValue(differenceValue, 1L, 0L);
         }
-
-        /** second remove reflex difference
-        if(0L == diffMap.addValue(0L, -tidRange)){
-            diffMap.remove(0L);
-        }*/
 
         return diffMap;
     }
