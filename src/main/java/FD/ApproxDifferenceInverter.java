@@ -15,7 +15,6 @@ public class ApproxDifferenceInverter {
     private int nAttributes;
     private List<Difference> differences;
     private LongBitSetTrie approxCovers;    // for subset searching
-    private AttributeOrganizer organizer; //re-order attributes by difference coverage to accelerate trie
 
     public ApproxDifferenceInverter(int _nAttributes) {
         nAttributes = _nAttributes;
@@ -23,8 +22,6 @@ public class ApproxDifferenceInverter {
     }
 
     public FunctionDependency buildFD(DifferenceSet differenceSet, double error) {
-
-        organizer = new AttributeOrganizer(nAttributes, differenceSet);
 
         FunctionDependency fds = new FunctionDependency();
 
@@ -62,8 +59,6 @@ public class ApproxDifferenceInverter {
         }
 
         System.out.println("  [ADI] Total FD size: " + fds.getTotalCount());
-        //fds.minimize();
-        //System.out.println("  [ADI] Min FD size : " + fds.size());
 
         return fds;
     }

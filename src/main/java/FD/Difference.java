@@ -1,9 +1,6 @@
 package FD;
 
-import FastADC.evidence.evidenceSet.Evidence;
 import ch.javasoft.bitset.LongBitSet;
-
-import java.util.BitSet;
 
 public class Difference {
 
@@ -16,14 +13,14 @@ public class Difference {
         differenceValue = _differenceValue;
         count = _count;
         nAttributes = _nAttributes;
-        bitset =  longToBitSet(_nAttributes, _differenceValue);
+        bitset =  longToBitSet(nAttributes, _differenceValue);
     }
 
     public Difference(LongBitSet _bitset, long _count, int _nAttributes){
         bitset = _bitset;
         count = _count;
         nAttributes = _nAttributes;
-        differenceValue = bitsetToLong(_nAttributes, _bitset);
+        differenceValue = bitsetToLong(nAttributes, _bitset);
     }
 
     public long getDifferenceValue(){

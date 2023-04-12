@@ -1,15 +1,9 @@
 package FD;
 
-import ch.javasoft.bitset.IBitSet;
 import ch.javasoft.bitset.LongBitSet;
-import ch.javasoft.bitset.search.NTreeSearch;
-import de.metanome.algorithms.dcfinder.denialconstraints.DenialConstraint;
-import de.metanome.algorithms.dcfinder.denialconstraints.DenialConstraintSet;
-import de.metanome.algorithms.dcfinder.predicates.sets.Closure;
-import de.metanome.algorithms.dcfinder.predicates.sets.PredicateSet;
-import de.metanome.algorithms.dcfinder.predicates.sets.PredicateSetFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class FunctionDependency {
     int nAttributes;
@@ -22,10 +16,6 @@ public class FunctionDependency {
         totalCount = 0;
     }
 
-    public FunctionDependency(int _nAttributes){
-        nAttributes = _nAttributes;
-    }
-
     public void add(List<LongBitSet> fd){
         minFDs.add(fd);
         totalCount += fd.size();
@@ -35,54 +25,54 @@ public class FunctionDependency {
         return totalCount;
     }
 
-    /*private static class MinimalFDCandidate {
-        DenialConstraint dc;
+/*    private static class MinimalFDCandidate {
+        DenialConstraint fd;
         IBitSet bitset;
 
-        public MinimalFDCandidate(DenialConstraint dc) {
-            this.dc = dc;
-            this.bitset = PredicateSetFactory.create(dc.getPredicateSet()).getBitset();
+        public MinimalFDCandidate(DenialConstraint fd) {
+            this.fd = fd;
+            this.bitset = PredicateSetFactory.create(fd.getPredicateSet()).getBitset();
         }
 
-        public boolean shouldReplace(DenialConstraintSet.MinimalDCCandidate prior) {
+        public boolean shouldReplace(MinimalFDCandidate prior) {
             if (prior == null)
                 return true;
-            if (dc.getPredicateCount() < prior.dc.getPredicateCount())
+            if (fd.getPredicateCount() < prior.fd.getPredicateCount())
                 return true;
-            if (dc.getPredicateCount() > prior.dc.getPredicateCount())
+            if (fd.getPredicateCount() > prior.fd.getPredicateCount())
                 return false;
 
             return bitset.compareTo(prior.bitset) <= 0;
         }
     }
     public void minimize() {
-        Map<PredicateSet, DenialConstraintSet.MinimalDCCandidate> constraintsClosureMap = new HashMap<>();
+        Map<PredicateSet, MinimalFDCandidate> constraintsClosureMap = new HashMap<>();
         for (DenialConstraint dc : constraints) {
             PredicateSet predicateSet = dc.getPredicateSet();
             Closure c = new Closure(predicateSet);
             if (c.construct()) {
-                DenialConstraintSet.MinimalDCCandidate candidate = new DenialConstraintSet.MinimalDCCandidate(dc);
+                MinimalFDCandidate candidate = new MinimalFDCandidate(dc);
                 PredicateSet closure = c.getClosure();
-                DenialConstraintSet.MinimalDCCandidate prior = constraintsClosureMap.get(closure);
+                MinimalFDCandidate prior = constraintsClosureMap.get(closure);
                 if (candidate.shouldReplace(prior))
                     constraintsClosureMap.put(closure, candidate);
             }
         }
 
-        List<Map.Entry<PredicateSet, DenialConstraintSet.MinimalDCCandidate>> constraints2 = new ArrayList<>(constraintsClosureMap.entrySet());
+        List<Map.Entry<PredicateSet, MinimalFDCandidate>> constraints2 = new ArrayList<>(constraintsClosureMap.entrySet());
 
         constraints2.sort(Comparator
-                .comparingInt((Map.Entry<PredicateSet, DenialConstraintSet.MinimalDCCandidate> entry) -> entry.getKey().size())
-                .thenComparingInt(entry -> entry.getValue().dc.getPredicateCount())
+                .comparingInt((Map.Entry<PredicateSet, MinimalFDCandidate> entry) -> entry.getKey().size())
+                .thenComparingInt(entry -> entry.getValue().fd.getPredicateCount())
                 .thenComparing(entry -> entry.getValue().bitset));
 
         constraints = new HashSet<>();
         NTreeSearch tree = new NTreeSearch();
-        for (Map.Entry<PredicateSet, DenialConstraintSet.MinimalDCCandidate> entry : constraints2) {
+        for (Map.Entry<PredicateSet, MinimalFDCandidate> entry : constraints2) {
             if (tree.containsSubset(PredicateSetFactory.create(entry.getKey()).getBitset()))
                 continue;
 
-            DenialConstraint inv = entry.getValue().dc.getInvT1T2DC();
+            DenialConstraint inv = entry.getValue().fd.getInvT1T2DC();
             if (inv != null) {
                 Closure c = new Closure(inv.getPredicateSet());
                 if (!c.construct())
@@ -91,7 +81,7 @@ public class FunctionDependency {
                     continue;
             }
 
-            constraints.add(entry.getValue().dc);
+            constraints.add(entry.getValue().fd);
             tree.add((LongBitSet) entry.getValue().bitset);
             if (inv != null)
                 tree.add(PredicateSetFactory.create(inv.getPredicateSet()).getBitset());

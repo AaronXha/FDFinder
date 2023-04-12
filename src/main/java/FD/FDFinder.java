@@ -29,6 +29,36 @@ public class FDFinder {
         linear = _linear;
     }
 
+    public FDFinder(double _threshold, int _len, boolean _linear, int _nAttributes){
+        this.threshold = _threshold;
+        this.shardLength = _len;
+        linear = _linear;
+        nAttributes = _nAttributes;
+    }
+
+    public void buildApproxFDsFromFile(String _dsFp, int sizeLimit){
+        System.out.println("INPUT FILE: " + dataFp);
+        System.out.println("ERROR THRESHOLD: " + threshold);
+
+        // Pre-process: load input data and build difference set
+        long t00 = System.currentTimeMillis();
+        differenceSetBuilder = new DifferenceSetBuilder(nAttributes);
+        DifferenceSet differenceSet = differenceSetBuilder.buildFromFile(_dsFp, sizeLimit);
+        long t_pre = System.currentTimeMillis() - t00;
+        System.out.println(" [Attribute] Attribute number: " + nAttributes);
+        System.out.println("[FDFinder] Pre-process time: " + t_pre + "ms");
+        System.out.println(" [Difference] # of differences: " + differenceSet.size());
+        System.out.println(" [Difference] Accumulated difference count: " + differenceSet.getTotalCount());
+
+        // approx difference inversion
+        long t20 = System.currentTimeMillis();
+        ApproxDifferenceInverter differenceInverter = new ApproxDifferenceInverter(nAttributes);
+        differenceInverter.buildFD(differenceSet, threshold);
+        long t_adi = System.currentTimeMillis() - t20;
+        System.out.println("[FDFinder] ADI time: " + t_adi + "ms");
+
+    }
+
     public void buildApproxFDs(String _dataFp, int sizeLimit){
         dataFp = _dataFp;
         System.out.println("INPUT FILE: " + dataFp);
@@ -47,7 +77,6 @@ public class FDFinder {
 
         //build difference set
         long t10 = System.currentTimeMillis();
-
         long differenceCount = nTuples * (nTuples - 1) / 2;
         differenceSetBuilder = new DifferenceSetBuilder(nAttributes, differenceCount);
         DifferenceSet differenceSet = differenceSetBuilder.build(pliShards, linear);
