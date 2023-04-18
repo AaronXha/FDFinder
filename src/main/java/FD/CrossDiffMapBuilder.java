@@ -7,14 +7,15 @@ import com.koloboke.collect.map.hash.HashLongLongMaps;
 
 import java.util.List;
 
+import static FD.FDFinder.nAttributes;
+
 public class CrossDiffMapBuilder {
     private final List<Pli> plis1, plis2;
     private final int tidBeg1, tidBeg2;
     private final int tidRange1, tidRange2;
     private final int differenceCount;
-    private final int nAttributes;
 
-    public CrossDiffMapBuilder(PliShard shard1, PliShard shard2, int _nAttributes) {
+    public CrossDiffMapBuilder(PliShard shard1, PliShard shard2) {
         plis1 = shard1.plis;
         plis2 = shard2.plis;
         tidBeg1 = shard1.beg;
@@ -22,17 +23,12 @@ public class CrossDiffMapBuilder {
         tidRange1 = shard1.end - shard1.beg;
         tidRange2 = shard2.end - shard2.beg;
         differenceCount = (shard1.end - shard1.beg) * (shard2.end - shard2.beg);
-        nAttributes = _nAttributes;
     }
 
     public HashLongLongMap buildDiffMap(){
         long[] differenceValues = new long[differenceCount];   // plis1 -> plis2
 
         HashLongLongMap diffMap = HashLongLongMaps.newMutableMap();
-        /*long initValue = (long)Math.pow(2, nAttributes) - 1;
-        for(int k = 0; k < differenceCount; k++){
-            differenceValues[k] = initValue;
-        }*/
 
         /** get all differenceValue*/
         /** for every attribute*/
@@ -51,14 +47,11 @@ public class CrossDiffMapBuilder {
                         for (int tid2 : probePli.get(j).getRawCluster()) {
                             int t2 = tid2 - tidBeg2, r2 = t2 * tidRange1;
                             differenceValues[r1 + t2] |= mask;
-                            //differenceValues[r1 + t2] &= ~mask;
                         }
                     }
                 }
             }
         }
-
-        /** accumulate differenceValues to differenceSet*/
 
         /** put differenceValue and count to diffMap*/
         for(long differenceValue :differenceValues){

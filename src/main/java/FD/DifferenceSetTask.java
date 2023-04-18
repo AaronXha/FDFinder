@@ -24,23 +24,21 @@ public class DifferenceSetTask extends CountedCompleter<HashLongLongMap> {
 
     DifferenceSetTask sibling;
     HashLongLongMap partialDiffMap;
-    int nAttributes;
 
-    public DifferenceSetTask(DifferenceSetTask parent, PliShard[] _pliShards, int _beg, int _end, int _nAttributes) {
+    public DifferenceSetTask(DifferenceSetTask parent, PliShard[] _pliShards, int _beg, int _end) {
         super(parent);
         pliShards = _pliShards;
         taskBeg = _beg;
         taskEnd = _end;
         buildSearchIndex(taskEnd);
-        nAttributes = _nAttributes;
     }
 
     @Override
     public void compute() {
         if (taskEnd - taskBeg >= 2) {
             int mid = (taskBeg + taskEnd) >>> 1;
-            DifferenceSetTask left = new DifferenceSetTask(this, pliShards, taskBeg, mid, nAttributes);
-            DifferenceSetTask right = new DifferenceSetTask(this, pliShards, mid, taskEnd, nAttributes);
+            DifferenceSetTask left = new DifferenceSetTask(this, pliShards, taskBeg, mid);
+            DifferenceSetTask right = new DifferenceSetTask(this, pliShards, mid, taskEnd);
             left.sibling = right;
             right.sibling = left;
 
@@ -50,21 +48,18 @@ public class DifferenceSetTask extends CountedCompleter<HashLongLongMap> {
             left.compute();
         } else {
             if (taskEnd > taskBeg) {
-
-
                 // taskID = i*(i+1)/2 + j
                 int i = lowerBound(searchIndexes, taskBeg);
                 int j = i - (searchIndexes[i] - taskBeg);
 
                 if(i == j){
-                    SingleDiffMapBuilder singleDiffMapBuilder = new SingleDiffMapBuilder(pliShards[i], nAttributes);
+                    SingleDiffMapBuilder singleDiffMapBuilder = new SingleDiffMapBuilder(pliShards[i]);
                     partialDiffMap = singleDiffMapBuilder.buildDiffMap();
                 }
                 else{
-                    CrossDiffMapBuilder crossDiffMapBuilder = new CrossDiffMapBuilder(pliShards[i], pliShards[j], nAttributes);
+                    CrossDiffMapBuilder crossDiffMapBuilder = new CrossDiffMapBuilder(pliShards[i], pliShards[j]);
                     partialDiffMap = crossDiffMapBuilder.buildDiffMap();
                 }
-
             }
             tryComplete();
         }

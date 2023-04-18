@@ -6,43 +6,39 @@ import de.metanome.algorithms.dcfinder.input.Input;
 import de.metanome.algorithms.dcfinder.input.RelationalInput;
 
 public class FDFinder {
-
+    public static int nAttributes;
     // configure of PliShardBuilder
     private final int shardLength;
-
-    // configure of EvidenceSetBuilder
-    private final boolean linear;
-
+    // configure of DifferenceSetBuilder
+    private boolean linear_1;
     // configure of ApproxCoverSearcher
+    private boolean linear_2;
     private final double threshold;
-
     private String dataFp;
-    private Input input;
-    private PliShardBuilder pliShardBuilder;
-    private int nAttributes;
-    private long nTuples;
     private DifferenceSetBuilder differenceSetBuilder;
 
-    public FDFinder(double _threshold, int _len, boolean _linear){
+    public FDFinder(double _threshold, int _len, int _nAttributes, boolean _linear_2){
         this.threshold = _threshold;
         this.shardLength = _len;
-        linear = _linear;
+        nAttributes = _nAttributes;
+        linear_2 = _linear_2;
     }
 
-    public FDFinder(double _threshold, int _len, boolean _linear, int _nAttributes){
+    public FDFinder(double _threshold, int _len, boolean _linear_1, boolean _linear_2){
         this.threshold = _threshold;
         this.shardLength = _len;
-        linear = _linear;
-        nAttributes = _nAttributes;
+        linear_1 = _linear_1;
+        linear_2 = _linear_2;
     }
 
     public void buildApproxFDsFromFile(String _dsFp, int sizeLimit){
         System.out.println("INPUT FILE: " + dataFp);
         System.out.println("ERROR THRESHOLD: " + threshold);
+        System.out.println("LOAD DIFFERENCE FROM FILE");
 
         // Pre-process: load input data and build difference set
         long t00 = System.currentTimeMillis();
-        differenceSetBuilder = new DifferenceSetBuilder(nAttributes);
+        differenceSetBuilder = new DifferenceSetBuilder();
         DifferenceSet differenceSet = differenceSetBuilder.buildFromFile(_dsFp, sizeLimit);
         long t_pre = System.currentTimeMillis() - t00;
         System.out.println(" [Attribute] Attribute number: " + nAttributes);
@@ -52,24 +48,26 @@ public class FDFinder {
 
         // approx difference inversion
         long t20 = System.currentTimeMillis();
-        ApproxDifferenceInverter differenceInverter = new ApproxDifferenceInverter(nAttributes);
-        differenceInverter.buildFD(differenceSet, threshold);
+        ApproxDifferenceInverter differenceInverter = new ApproxDifferenceInverter();
+        differenceInverter.build(differenceSet, threshold, linear_2);
         long t_adi = System.currentTimeMillis() - t20;
-        System.out.println("[FDFinder] ADI time: " + t_adi + "ms");
+        System.out.println("[FDFinder] ADI total time: " + t_adi + "ms");
 
+        System.out.println("[FDFinder] Total computing time: " + (t_pre + t_adi) + " ms\n");
     }
 
     public void buildApproxFDs(String _dataFp, int sizeLimit){
         dataFp = _dataFp;
         System.out.println("INPUT FILE: " + dataFp);
         System.out.println("ERROR THRESHOLD: " + threshold);
+        System.out.println("BUILD DIFFERENCE SET");
 
         // Pre-process: load input data
         long t00 = System.currentTimeMillis();
-        input = new Input(new RelationalInput(dataFp), sizeLimit);
-        pliShardBuilder = new PliShardBuilder(shardLength, input.getParsedColumns());
+        Input input = new Input(new RelationalInput(dataFp), sizeLimit);
+        PliShardBuilder pliShardBuilder = new PliShardBuilder(shardLength, input.getParsedColumns());
         nAttributes = input.getColCount();
-        nTuples = input.getRowCount();
+        long nTuples = input.getRowCount();
         PliShard[] pliShards = pliShardBuilder.buildPliShards(input.getIntInput());
         long t_pre = System.currentTimeMillis() - t00;
         System.out.println(" [Attribute] Attribute number: " + nAttributes);
@@ -78,8 +76,8 @@ public class FDFinder {
         //build difference set
         long t10 = System.currentTimeMillis();
         long differenceCount = nTuples * (nTuples - 1) / 2;
-        differenceSetBuilder = new DifferenceSetBuilder(nAttributes, differenceCount);
-        DifferenceSet differenceSet = differenceSetBuilder.build(pliShards, linear);
+        differenceSetBuilder = new DifferenceSetBuilder(differenceCount);
+        DifferenceSet differenceSet = differenceSetBuilder.build(pliShards, linear_1);
         long t_diff = System.currentTimeMillis() - t10;
         System.out.println(" [Difference] # of differences: " + differenceSet.size());
         System.out.println(" [Difference] Accumulated difference count: " + differenceSet.getTotalCount());
@@ -87,8 +85,8 @@ public class FDFinder {
 
         // approx difference inversion
         long t20 = System.currentTimeMillis();
-        ApproxDifferenceInverter differenceInverter = new ApproxDifferenceInverter(nAttributes);
-        differenceInverter.buildFD(differenceSet, threshold);
+        ApproxDifferenceInverter differenceInverter = new ApproxDifferenceInverter();
+        differenceInverter.build(differenceSet, threshold, linear_2);
         long t_adi = System.currentTimeMillis() - t20;
         System.out.println("[FDFinder] ADI time: " + t_adi + "ms");
 

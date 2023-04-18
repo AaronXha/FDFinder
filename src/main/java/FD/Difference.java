@@ -2,24 +2,23 @@ package FD;
 
 import ch.javasoft.bitset.LongBitSet;
 
+import static FD.FDFinder.nAttributes;
+
 public class Difference {
 
     public long count;
-    private long differenceValue;
-    private LongBitSet bitset;
-    private int nAttributes;
+    private final long differenceValue;
+    private final LongBitSet bitset;
 
-    public Difference(long _differenceValue, long _count, int _nAttributes) {
+    public Difference(long _differenceValue, long _count) {
         differenceValue = _differenceValue;
         count = _count;
-        nAttributes = _nAttributes;
         bitset =  longToBitSet(nAttributes, _differenceValue);
     }
 
-    public Difference(LongBitSet _bitset, long _count, int _nAttributes){
+    public Difference(LongBitSet _bitset, long _count){
         bitset = _bitset;
         count = _count;
-        nAttributes = _nAttributes;
         differenceValue = bitsetToLong(nAttributes, _bitset);
     }
 

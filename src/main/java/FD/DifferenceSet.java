@@ -4,16 +4,14 @@ import java.util.List;
 
 public class DifferenceSet {
 
-    private List<Difference> differences;
+    private final List<Difference> differences;
 
-    private long totalCount;
+    private final long totalCount;
 
-    int nAttributes;
 
-    public DifferenceSet(List<Difference> _differences, long _totalCount, int _nAttributes) {
+    public DifferenceSet(List<Difference> _differences, long _totalCount) {
         differences = _differences;
         totalCount = _totalCount;
-        nAttributes = _nAttributes;
     }
 
     public int size(){

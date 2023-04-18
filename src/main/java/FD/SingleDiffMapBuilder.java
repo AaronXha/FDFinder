@@ -7,29 +7,24 @@ import com.koloboke.collect.map.hash.HashLongLongMaps;
 
 import java.util.List;
 
+import static FD.FDFinder.nAttributes;
+
 public class SingleDiffMapBuilder {
 
     private final List<Pli> plis;
-    private final int tidBeg, tidRange;
+    private final int tidBeg;
     private final int differenceCount;
-    private final int nAttributes;
 
-    public SingleDiffMapBuilder(PliShard shard, int _nAttributes) {
+    public SingleDiffMapBuilder(PliShard shard) {
         plis = shard.plis;
         tidBeg = shard.beg;
-        tidRange = shard.end - shard.beg;
+        int tidRange = shard.end - shard.beg;
         differenceCount = (tidRange - 1) * tidRange / 2;
-        nAttributes = _nAttributes;
     }
 
     public HashLongLongMap buildDiffMap(){
         long[] differenceValues = new long[differenceCount];
         HashLongLongMap diffMap = HashLongLongMaps.newMutableMap();
-        /*long initValue = (long)Math.pow(2, nAttributes) - 1;
-        for(int k = 0; k < differenceCount; k++){
-            differenceValues[k] = initValue;
-        }*/
-
 
         /** get all differenceValue*/
         /** for every attribute*/
@@ -55,9 +50,6 @@ public class SingleDiffMapBuilder {
                 }
             }
         }
-
-        /** accumulate differenceValues to differenceSet*/
-
         /** first put differenceValue and count to diffMap*/
         for(long differenceValue :differenceValues){
             diffMap.addValue(differenceValue, 1L, 0L);

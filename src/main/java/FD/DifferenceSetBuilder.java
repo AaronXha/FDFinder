@@ -11,17 +11,16 @@ import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.List;
 
+import static FD.FDFinder.nAttributes;
+
 public class DifferenceSetBuilder {
     private DifferenceSet fullDifferenceSet;
-    private int nAttributes;
     private long totalCount;
 
-    public DifferenceSetBuilder(int _nAttributes){
-        nAttributes = _nAttributes;
+    public DifferenceSetBuilder(){
     }
 
-    public DifferenceSetBuilder(int _nAttributes, long _totalCount){
-        nAttributes = _nAttributes;
+    public DifferenceSetBuilder(long _totalCount){
         totalCount = _totalCount;
     }
 
@@ -57,7 +56,7 @@ public class DifferenceSetBuilder {
                 }
                 long count = Long.parseLong(s.substring(index + 2));
                 sumCount += count;
-                differences.add(new Difference(bitSet, count, nAttributes));
+                differences.add(new Difference(bitSet, count));
             }
         }
         else{
@@ -69,11 +68,11 @@ public class DifferenceSetBuilder {
                 }
                 long count = Long.parseLong(s.substring(index + 2));
                 sumCount += count;
-                differences.add(new Difference(bitSet, count, nAttributes));
+                differences.add(new Difference(bitSet, count));
             }
         }
 
-        return new DifferenceSet(differences, sumCount, nAttributes);
+        return new DifferenceSet(differences, sumCount);
     }
 
     private DifferenceSet linearBuildDifferenceSet(PliShard[] pliShards) {
@@ -87,11 +86,11 @@ public class DifferenceSetBuilder {
             for (int j = i; j < pliShards.length; j++) {
                 HashLongLongMap partialDiffMap;
                 if(i == j){
-                    SingleDiffMapBuilder singleDiffMapBuilder = new SingleDiffMapBuilder(pliShards[i], nAttributes);
+                    SingleDiffMapBuilder singleDiffMapBuilder = new SingleDiffMapBuilder(pliShards[i]);
                     partialDiffMap = singleDiffMapBuilder.buildDiffMap();
                 }
                 else{
-                    CrossDiffMapBuilder crossDiffMapBuilder = new CrossDiffMapBuilder(pliShards[i], pliShards[j], nAttributes);
+                    CrossDiffMapBuilder crossDiffMapBuilder = new CrossDiffMapBuilder(pliShards[i], pliShards[j]);
                     partialDiffMap = crossDiffMapBuilder.buildDiffMap();
                 }
                 partialDiffMap.forEach(add);
@@ -99,11 +98,11 @@ public class DifferenceSetBuilder {
         }
 
         for (var entry : diffMap.entrySet()) {
-            differences.add(new Difference(entry.getKey(), entry.getValue(), nAttributes));
+            differences.add(new Difference(entry.getKey(), entry.getValue()));
         }
 
 
-        return new DifferenceSet(differences, totalCount, nAttributes);
+        return new DifferenceSet(differences, totalCount);
     }
 
 
@@ -113,13 +112,13 @@ public class DifferenceSetBuilder {
 
         int taskCount = (pliShards.length * (pliShards.length + 1)) / 2;
 
-        DifferenceSetTask rootTask = new DifferenceSetTask(null, pliShards, 0, taskCount, nAttributes);
+        DifferenceSetTask rootTask = new DifferenceSetTask(null, pliShards, 0, taskCount);
         diffMap = rootTask.invoke();
 
         for (var entry : diffMap.entrySet()) {
-            differences.add(new Difference(entry.getKey(), entry.getValue(), nAttributes));
+            differences.add(new Difference(entry.getKey(), entry.getValue()));
         }
 
-        return new DifferenceSet(differences, totalCount, nAttributes);
+        return new DifferenceSet(differences, totalCount);
     }
 }
